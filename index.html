@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Darkest Run</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="gameContainer">
+
+  <!-- Canvases -->
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Flash de dégât -->
+  <div id="hitFlash"></div>
+
+  <!-- HUD -->
+  <div id="ui">
+    <div id="scoreBox">SCORE : <span id="scoreVal">0</span></div>
+    <div id="livesBox">❤️ <span id="livesVal">3</span></div>
+  </div>
+
+  <!-- Indicateur vitesse -->
+  <div id="speedLabel">VITESSE : <span id="speedLabel2">1.0x</span></div>
+
+  <!-- Overlay menu / game over -->
+  <div id="overlay">
+    <h1>DARKEST RUN</h1>
+    <div class="subtitle">— LE DONJON VOUS ATTEND —</div>
+    <div class="controls">
+      <span>ESPACE / ↑</span> — Sauter (double saut possible)<br>
+      <span>↓ / S</span> — S'accroupir<br>
+      <span>TOUCHER</span> — Sauter (mobile) / Glisser bas pour s'accroupir
+    </div>
+    <button class="btn" id="startBtn">COMMENCER</button>
+  </div>
+
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+/* ============================================================
+   DARKEST RUN — Feuille de styles
+   ============================================================ */
+
+/* ── Reset & Base ─────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  background: #0a0a0f;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Conteneur principal ──────────────────────────────────── */
+#gameContainer {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Georgia', serif;
+  background: #0a0a0f;
+}
+
+/* ── Canvases ─────────────────────────────────────────────── */
+#bgCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#gameCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── HUD (Score + Vies) ───────────────────────────────────── */
+#ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#scoreBox {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #6b4c2a;
+  padding: 8px 16px;
+  color: #d4a84b;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(212, 168, 75, 0.27);
+}
+
+#livesBox {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #6b2a2a;
+  padding: 8px 16px;
+  color: #c0392b;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+/* ── Indicateur de vitesse ────────────────────────────────── */
+#speedLabel {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #6b4c2a;
+  font-size: 12px;
+  letter-spacing: 2px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Flash rouge (dégât reçu) ─────────────────────────────── */
+#hitFlash {
+  position: absolute;
+  inset: 0;
+  background: rgba(180, 0, 0, 0);
+  pointer-events: none;
+  z-index: 5;
+  transition: background 0.1s;
+}
+
+/* ── Overlay (menu principal & game over) ─────────────────── */
+#overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  color: #d4a84b;
+}
+
+#overlay h1 {
+  font-size: 48px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 24px rgba(212, 168, 75, 0.4);
+  margin-bottom: 10px;
+}
+
+#overlay .subtitle {
+  color: #a08050;
+  font-size: 14px;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+}
+
+#overlay .controls {
+  color: #888888;
+  font-size: 13px;
+  margin-bottom: 30px;
+  text-align: center;
+  line-height: 2.2;
+}
+
+#overlay .controls span {
+  color: #d4a84b;
+  font-weight: bold;
+}
+
+#overlay .final-score-label {
+  color: #a08050;
+  font-size: 22px;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+#overlay .final-score-value {
+  color: #d4a84b;
+  font-size: 48px;
+  margin-bottom: 28px;
+  text-shadow: 0 0 20px rgba(212, 168, 75, 0.4);
+}
+
+/* ── Bouton générique ─────────────────────────────────────── */
+.btn {
+  background: transparent;
+  border: 1px solid #d4a84b;
+  color: #d4a84b;
+  padding: 12px 44px;
+  font-size: 16px;
+  font-family: 'Georgia', serif;
+  letter-spacing: 3px;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(212, 168, 75, 0.27);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+  background: rgba(212, 168, 75, 0.12);
+  box-shadow: 0 0 20px rgba(212, 168, 75, 0.27);
+}
