@@ -22,10 +22,9 @@ Jeu de type runner développé en HTML, CSS et JavaScript.
 - index.html
 - style.css
 - game.js
-- script.js (ancienne version)
 
-## 🚧 Note
-Ce commit contient deux versions mélangées du jeu (prototype + version canvas avancée).
+## 🌐 Lien du jeu
+https://seroualmaher-cyber.github.io/seroual_maher_runner_game/
 
 ## 🚀 Améliorations futures
 - Sons et musique
