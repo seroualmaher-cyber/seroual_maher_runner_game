@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -43,3 +44,46 @@
 <script src="game.js"></script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Runner Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1> Runner Game</h1>
+
+<div id="game">
+    <div id="character"></div>
+
+    <!-- START SCREEN -->
+    <div id="startScreen" class="overlay">
+        <h2>Runner Game</h2>
+        <button id="startBtn">Commencer</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameOverScreen" class="overlay hidden">
+        <h2>Game Over</h2>
+        <p>Score : <span id="finalScore"></span></p>
+        <button id="restartBtn">Rejouer</button>
+    </div>
+</div>
+
+<div id="hud">
+    Score : <span id="score">0</span> |
+    Meilleur : <span id="bestScore">0</span>
+</div>
+
+<p>⬆️ Sauter | ⬇️ S'accroupir</p>
+
+<audio id="jumpSound" src="assets/jump.mp3"></audio>
+<audio id="gameOverSound" src="assets/gameover.mp3"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>
+>>>>>>> 73a33fb86f7d6df092be0560c41ced7903de0dea
