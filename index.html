@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Darkest Run</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       CONTENEUR PRINCIPAL 
+       ═══════════════════════════════════════════════════════ -->
+  <div id="gameContainer">
+
+    <!-- CANVAS 1 : fond  (background.jpg) -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- CANVAS 2 : personnage + obstacles + particules -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Flash rouge visible quand le joueur est touche -->
+    <div id="hitFlash"></div>
+
+    <!-- ───  informations affiches pendant la partie ─── -->
+    <div id="ui">
+      <div id="scoreBox">SCORE : <span id="scoreVal">0</span></div>
+      <div id="bestBox">MEILLEUR : <span id="bestVal">0</span></div>
+      <div id="livesBox">❤️ <span id="livesVal">3</span></div>
+    </div>
+
+    <!-- Vitesse courante affiche en bas au centre -->
+    <div id="speedLabel">VITESSE : <span id="speedVal">1.0x</span></div>
+
+    <!-- ─── OVERLAY : menu de depart et ecran Game Over ─── -->
+    <div id="overlay">
+      <h1>DARKEST RUN</h1>
+      <p class="subtitle">— LE DONJON VOUS ATTEND —</p>
+
+      <!-- Meilleur score affiche dans le menu -->
+      <p class="best-display">🏆 MEILLEUR SCORE : <span id="bestScoreMenu">0</span></p>
+
+      <div class="controls">
+        <span>ESPACE / ↑</span> — Sauter (double saut)<br>
+        <span>↓ / S</span> — S'accroupir<br>
+        <span>TOUCHER</span> — Sauter &nbsp;|&nbsp; Glisser bas = s'accroupir
+      </div>
+
+      <button class="btn" id="startBtn">COMMENCER</button>
+    </div>
+
+  </div><!-- fin #gameContainer -->
+  <audio id="bgMusic"       src="darkfantasy.mp3"   loop preload="auto"></audio>
+  <audio id="jumpAudio"     src="jumpSound.mp3"          preload="auto"></audio>
+  <audio id="damageAudio"   src="damage.mp3"             preload="auto"></audio>
+  <audio id="gameOverAudio" src="gameOverSound.mp3"      preload="auto"></audio>
+
+  <script src="game.js"></script>
+</body>
+</html>
