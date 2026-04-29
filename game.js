@@ -1,647 +1,414 @@
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 1 — RECUPERATION DES ELEMENTS HTML
-   ═══════════════════════════════════════════════════════════════ */
+/* ============================================================
+   DARKEST RUN — Logique du jeu
+   Assets attendus dans le même dossier :
+     background.jpg  — décor défilant
+     caracter.jpg    — sprite du joueur
+     obstacle.png    — ennemi / obstacle volant
+   ============================================================ */
 
-// Les deux zones de dessin (canvas)
-const bgCanvas  = document.getElementById('bgCanvas');   
-const gameCanvas = document.getElementById('gameCanvas'); 
+/* ── Références DOM ─────────────────────────────────────────── */
+const bgCanvas   = document.getElementById('bgCanvas');
+const gc         = document.getElementById('gameCanvas');
+const bgCtx      = bgCanvas.getContext('2d');
+const ctx        = gc.getContext('2d');
+const container  = document.getElementById('gameContainer');
+const overlay    = document.getElementById('overlay');
+const scoreValEl = document.getElementById('scoreVal');
+const livesValEl = document.getElementById('livesVal');
+const speedEl    = document.getElementById('speedLabel2');
+const startBtn   = document.getElementById('startBtn');
+const hitFlash   = document.getElementById('hitFlash');
 
-// Les pinceaux pour dessiner sur chaque canvas
-const bgCtx  = bgCanvas.getContext('2d');
-const ctx    = gameCanvas.getContext('2d');
+/* ── Dimensions ─────────────────────────────────────────────── */
+let W, H, GROUND;
 
-// Le conteneur principal 
-const container = document.getElementById('gameContainer');
-
-// Lecran de menu / game over
-const overlay = document.getElementById('overlay');
-
-//  (affichage en jeu)
-const scoreValEl = document.getElementById('scoreVal');  
-const bestValEl  = document.getElementById('bestVal');  
-const livesValEl = document.getElementById('livesVal'); 
-const speedValEl = document.getElementById('speedVal'); 
-
-// Le rectangle rouge qui clignote quand on est touche
-const hitFlash = document.getElementById('hitFlash');
-
-// Le bouton "Commencer" du menu
-const startBtn = document.getElementById('startBtn');
-
-// Meilleur score affiche dans le menu
-const bestScoreMenuEl = document.getElementById('bestScoreMenu');
-
-// Les audio 
-const bgMusic       = document.getElementById('bgMusic');       
-const jumpAudio     = document.getElementById('jumpAudio');     
-const damageAudio   = document.getElementById('damageAudio');   
-const gameOverAudio = document.getElementById('gameOverAudio');
-
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 2 — REGLAGE DES VOLUMES AUDIO
-   ═══════════════════════════════════════════════════════════════ */
-
-bgMusic.volume       = 0.40;
-jumpAudio.volume     = 0.65; 
-damageAudio.volume   = 0.80; 
-gameOverAudio.volume = 0.90; 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 3 — DIMENSIONS DU JEU
-   ═══════════════════════════════════════════════════════════════ */
-
-let W;       // largeur 
-let H;       // hauteur
-let GROUND;  // position Y du sol 
-function calculerDimensions() {
-  W      = container.offsetWidth;
-  H      = container.offsetHeight;
-  GROUND = H * 0.78; 
-  // On ajuste la taille des deux canvas
-  bgCanvas.width   = gameCanvas.width  = W;
-  bgCanvas.height  = gameCanvas.height = H;
+function resize() {
+  W = container.offsetWidth;
+  H = container.offsetHeight;
+  GROUND = H * 0.78;                        // ligne du sol (78 % de la hauteur)
+  bgCanvas.width  = gc.width  = W;
+  bgCanvas.height = gc.height = H;
 }
+resize();
+window.addEventListener('resize', () => { resize(); drawBg(); });
 
-calculerDimensions();
-window.addEventListener('resize', () => {
-  calculerDimensions();
-  dessinerFond();
-});
+/* ── Chargement des images ───────────────────────────────────── */
+const bgImg   = new Image();
+const charImg = new Image();
+const obsImg  = new Image();
 
+bgImg.src   = 'background.jpg';
+charImg.src = 'caracter.jpg';
+obsImg.src  = 'obstacle.png';
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 4 — CHARGEMENT DES IMAGES
-   ═══════════════════════════════════════════════════════════════ */
+let bgLoaded = false, charLoaded = false, obsLoaded = false;
+bgImg.onload   = () => { bgLoaded   = true; drawBg(); };
+charImg.onload = () => { charLoaded = true; };
+obsImg.onload  = () => { obsLoaded  = true; };
 
-// Image du fond 
-const imgFond = new Image();
-imgFond.src   = 'background.jpg';       
-let fondCharge = false;
-imgFond.onload = () => { fondCharge = true; dessinerFond(); };
-
-// Image du personnage joueur
-const imgPersonnage = new Image();
-imgPersonnage.src   = 'character.png';  
-let personnageCharge = false;
-imgPersonnage.onload = () => { personnageCharge = true; };
-
-// Image de lobstacle
-const imgObstacle = new Image();
-imgObstacle.src   = 'obstacle.png';    
-let obstacleCharge = false;
-imgObstacle.onload = () => { obstacleCharge = true; };
-
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 5 — VARIABLES DETAT DU JEU
-   ═══════════════════════════════════════════════════════════════ */
-
-let partieEnCours = false;  
-let animationId;            
-let score       = 0;   
-let meilleurScore = 0; 
-let vies        = 3;   
-let vitesse     = 3;  
-let nombreFrames = 0;  
-let decalageFond = 0;  
-
-let obstacles  = [];   
-let particules = [];   
-
+/* ── État du jeu ─────────────────────────────────────────────── */
+let gameRunning = false;
+let animId;
+let score       = 0;
+let lives       = 3;
+let speed       = 3;           // vitesse de base en px/frame
+let frameCount  = 0;
+let bgX         = 0;           // décalage du fond
+let obstacles   = [];
+let particles   = [];
 let invincible  = false;
-let timerInvincible = 0; 
+let invTimer    = 0;
 
-/* ─── Constantes de vitesse ─── */
-const VITESSE_DEPART = 3;   
-const VITESSE_MAX    = 30;  
-
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 6 — LE PERSONNAGE
-   ═══════════════════════════════════════════════════════════════ */
-
-const joueur = {
-  x: 0,           
-  y: 0,            
-  largeur:  72,   
-  hauteur:  90,   
-  vitesseY: 0,     
-  estEnSaut:     false, 
-  estAccroupi:   false, 
-  nombreSauts:   0      
- 
+/* ── Personnage ─────────────────────────────────────────────── */
+const CHAR = {
+  x: 0, y: 0,
+  w: 72, h: 90,
+  vy: 0,              // vitesse verticale courante
+  jumping: false,
+  crouching: false,
+  jumpCount: 0        // permet le double saut (max 2)
 };
 
-/*  position de depart */
-function initialiserJoueur() {
-  joueur.x           = W * 0.15;         
-  joueur.y           = GROUND - joueur.hauteur;
-  joueur.vitesseY    = 0;
-  joueur.estEnSaut   = false;
-  joueur.estAccroupi = false;
-  joueur.nombreSauts = 0;
+function resetChar() {
+  CHAR.x         = W * 0.15;
+  CHAR.y         = GROUND - CHAR.h;
+  CHAR.vy        = 0;
+  CHAR.jumping   = false;
+  CHAR.crouching = false;
+  CHAR.jumpCount = 0;
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 7 — FONCTIONS AUDIO
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Lance la musique de fond depuis le début */
-function lancerMusique() {
-  bgMusic.currentTime = 0;
-  bgMusic.play().catch(() => { });
-}
-
-/* Arrete la musique de fond */
-function arreterMusique() {
-  bgMusic.pause();
-  bgMusic.currentTime = 0;
-}
-
-function jouerSon(elementAudio) {
-  elementAudio.currentTime = 0;
-  elementAudio.play().catch(() => {});
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 8 — DESSIN DU FOND DEFILANT
-   ═══════════════════════════════════════════════════════════════ */
-
-function dessinerFond() {
-  if (fondCharge) {
-
+/* ── Rendu du background défilant ───────────────────────────── */
+function drawBg() {
+  if (bgLoaded) {
     bgCtx.clearRect(0, 0, W, H);
-
-    // Calcul de la largeur de limage 
-    const ratioImage = imgFond.width / imgFond.height;
-    const hauteurFond = H;
-    const largeurFond = hauteurFond * ratioImage;
-
-    // Calcul de la position X 
-    const positionX = ((decalageFond % largeurFond) + largeurFond) % largeurFond - largeurFond;
-
-    // On dessine limage deux fois 
-    bgCtx.drawImage(imgFond, positionX,               0, largeurFond, hauteurFond);
-    bgCtx.drawImage(imgFond, positionX + largeurFond, 0, largeurFond, hauteurFond);
-
-    // Couche noire pour que les sprites soient plus lisibles
-    bgCtx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+    const aspect = bgImg.width / bgImg.height;
+    const bh = H;
+    const bw = bh * aspect;
+    // calcul de la position pour un défilement parfaitement bouclé
+    const x1 = ((bgX % bw) + bw) % bw - bw;
+    bgCtx.drawImage(bgImg, x1,      0, bw, bh);
+    bgCtx.drawImage(bgImg, x1 + bw, 0, bw, bh);
+    // assombrissement léger pour améliorer la lisibilité
+    bgCtx.fillStyle = 'rgba(0,0,0,0.18)';
     bgCtx.fillRect(0, 0, W, H);
-
   } else {
-    //  fond noir uni si limage nest pas encore chargee
     bgCtx.fillStyle = '#0a0608';
     bgCtx.fillRect(0, 0, W, H);
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 9 — CALCUL DE LA VITESSE
-   ═══════════════════════════════════════════════════════════════ */
-
-function calculerVitesse() {
-  // La vitesse augmente  avec le score
-  let nouvelleVitesse = VITESSE_DEPART + (score / 600);
-
-  // On ne depasse pas le maximum
-  if (nouvelleVitesse > VITESSE_MAX) {
-    nouvelleVitesse = VITESSE_MAX;
-  }
-
-  vitesse = nouvelleVitesse;
-  const affichageMultiplicateur = (vitesse / VITESSE_DEPART).toFixed(1);
-  speedValEl.textContent = affichageMultiplicateur + 'x';
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 10 — GESTION DES OBSTACLES
-   ═══════════════════════════════════════════════════════════════ */
-
-function creerObstacle() {
-  // On choisit un type au hasard parmi les 3
-  const types = ['sol', 'vol_bas', 'vol_haut'];
+/* ── Génération d'obstacles ─────────────────────────────────── */
+/*
+ * Trois types :
+ *  - ground   : au sol          → le joueur doit SAUTER
+ *  - low_fly  : en vol bas      → le joueur doit SAUTER
+ *  - high_fly : en vol haut     → le joueur doit S'ACCROUPIR
+ */
+function spawnObstacle() {
+  const types = ['low_fly', 'high_fly', 'ground'];
   const type  = types[Math.floor(Math.random() * types.length)];
+  let y, w = 64, h = 56;
 
-  let posY, largeur = 64, hauteur = 56;
+  if      (type === 'ground')   { y = GROUND - 52;  h = 52; w = 52; }
+  else if (type === 'low_fly')  { y = GROUND - 115; h = 56; w = 64; }
+  else                          { y = GROUND - 185; h = 56; w = 64; }
 
-  // On place lobstacle a la bonne hauteur 
-  if      (type === 'sol')      { posY = GROUND - 52;  hauteur = 52; largeur = 52; }
-  else if (type === 'vol_bas')  { posY = GROUND - 115; }
-  else                          { posY = GROUND - 185; } 
-
-  // On ajoute lobstacle dans la liste
-  obstacles.push({
-    x:        W + 80,  
-    y:        posY,
-    largeur:  largeur,
-    hauteur:  hauteur,
-    type:     type,
-    depasse:  false,
-  });
+  obstacles.push({ x: W + 80, y, w, h, type, passed: false });
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 11 — PARTICULES (effets visuels)
-   ═══════════════════════════════════════════════════════════════ */
-
-function creerParticules(x, y, couleur) {
+/* ── Particules (saut / dégât) ──────────────────────────────── */
+function spawnParticles(x, y, color) {
   for (let i = 0; i < 14; i++) {
-    particules.push({
-      x:       x,
-      y:       y,
-      vx:      (Math.random() - 0.5) * 6,   
-      vy:      -Math.random() * 5 - 1,       
-      rayon:   Math.random() * 4 + 2,        
-      vie:     1,                           
-      couleur: couleur
+    particles.push({
+      x, y,
+      vx:   (Math.random() - 0.5) * 6,
+      vy:   -Math.random() * 5 - 1,
+      r:    Math.random() * 4 + 2,
+      life: 1,
+      color
     });
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 12 — ACTIONS DU JOUEUR
-   ═══════════════════════════════════════════════════════════════ */
-
-/* SAUT (double saut) */
-function sauter() {
-  if (!partieEnCours) return;
-
-  if (joueur.nombreSauts < 2) {
-    joueur.vitesseY    = -15;         
-    joueur.estEnSaut   = true;
-    joueur.nombreSauts++;
-
-    jouerSon(jumpAudio);           
-
-    // Particules  sous les pieds
-    creerParticules(
-      joueur.x + joueur.largeur / 2,
-      joueur.y + joueur.hauteur,
-      '#d4a84b'
-    );
+/* ── Actions joueur ─────────────────────────────────────────── */
+function jump() {
+  if (!gameRunning) return;
+  if (CHAR.jumpCount < 2) {
+    CHAR.vy        = -15;
+    CHAR.jumping   = true;
+    CHAR.jumpCount++;
+    spawnParticles(CHAR.x + CHAR.w / 2, CHAR.y + CHAR.h, '#d4a84b');
   }
 }
 
-/* ACCROUPISSEMENT */
-function sAccroupir(actif) {
-  if (!partieEnCours) return;
-  joueur.estAccroupi = actif;
+function crouch(on) {
+  if (!gameRunning) return;
+  CHAR.crouching = on;
 }
 
+/* ── Mise à jour (logique) ──────────────────────────────────── */
+function update() {
+  frameCount++;
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 13 — MISE A JOUR (logique du jeu)
-   ═══════════════════════════════════════════════════════════════ */
+  // Vitesse croissante plafonnée à 9
+  speed = Math.min(9, 3 + Math.floor(score / 500) * 0.5);
+  speedEl.textContent = (speed / 3).toFixed(1) + 'x';
 
-function mettreAJour() {
-  nombreFrames++;
+  // Défilement du fond
+  bgX -= speed * 0.4;
 
-  /* ───  Mise a jour de la vitesse ─── */
-  calculerVitesse();
-
-  /* ───  Defilement du fond ─── */
-  decalageFond -= vitesse * 0.4;
-
-  /* ─── 13c. Physique du personnage : gravite et sol ─── */
-  // Si le joueur est en lair, on lui applique la gravite
-  if (joueur.estEnSaut || joueur.y < GROUND - joueur.hauteur - 1) {
-    joueur.vitesseY += 0.72;          // acceere vers le bas
-    joueur.y        += joueur.vitesseY;
-
-   
-    if (joueur.y >= GROUND - joueur.hauteur) {
-      joueur.y           = GROUND - joueur.hauteur; 
-      joueur.vitesseY    = 0;
-      joueur.estEnSaut   = false;
-      joueur.nombreSauts = 0;         
+  // ── Physique du personnage (gravité) ──
+  if (CHAR.jumping || CHAR.y < GROUND - CHAR.h - 1) {
+    CHAR.vy += 0.72;
+    CHAR.y  += CHAR.vy;
+    if (CHAR.y >= GROUND - CHAR.h) {
+      CHAR.y         = GROUND - CHAR.h;
+      CHAR.vy        = 0;
+      CHAR.jumping   = false;
+      CHAR.jumpCount = 0;
     }
   }
 
-  /* Gestion de linvincibilite */
+  // ── Compte à rebours invincibilité post-dégât ──
   if (invincible) {
-    timerInvincible--;
-    if (timerInvincible <= 0) {
-      invincible = false; 
-    }
+    invTimer--;
+    if (invTimer <= 0) invincible = false;
   }
 
-  /*  Apparition des obstacles */
-  const frequenceApparition = Math.max(55, 120 - nombreFrames / 40);
-  if (nombreFrames % Math.floor(frequenceApparition) === 0) {
-    creerObstacle();
-  }
+  // ── Spawn d'obstacles ──
+  const spawnRate = Math.max(55, 120 - frameCount / 40);
+  if (frameCount % Math.floor(spawnRate) === 0) spawnObstacle();
 
-  /* Deplacement des obstacles et detection de collision */
+  // ── Mise à jour + collisions obstacles ──
   for (let i = obstacles.length - 1; i >= 0; i--) {
     const ob = obstacles[i];
+    ob.x -= speed;
 
-    // Lobstacle avance vers la gauche
-    ob.x -= vitesse;
-    if (!ob.depasse && ob.x + ob.largeur < joueur.x) {
-      ob.depasse = true;
-      score     += 10;
+    // Comptage : passage réussi d'un obstacle
+    if (!ob.passed && ob.x + ob.w < CHAR.x) {
+      ob.passed = true;
+      score    += 10;
     }
 
-    // Si lobstacle est sorti completement a gauche, on le supprime
-    if (ob.x + ob.largeur < -120) {
+    // Suppression une fois sorti de l'écran
+    if (ob.x + ob.w < -120) {
       obstacles.splice(i, 1);
-      continue; 
+      continue;
     }
 
-    /* Detection de collision*/
+    // ── Détection de collision (hitbox réduite = plus fair) ──
     if (!invincible) {
-      const jX = joueur.x + 10;                                  
-      const jW = joueur.largeur - 20;                             
-      const jY = joueur.estAccroupi ? joueur.y + joueur.hauteur * 0.45 : joueur.y;
-      const jH = joueur.estAccroupi ? joueur.hauteur * 0.55       : joueur.hauteur;
+      const charY = CHAR.crouching ? CHAR.y + CHAR.h * 0.45 : CHAR.y;
+      const charH = CHAR.crouching ? CHAR.h * 0.55           : CHAR.h;
+      const charX = CHAR.x + 10;
+      const charW = CHAR.w - 20;
 
-      // Test de collision rectangulaire
-      const collision =
-        jX      < ob.x + ob.largeur - 8 &&
-        jX + jW > ob.x + 8              &&
-        jY      < ob.y + ob.hauteur - 8 &&
-        jY + jH > ob.y + 8;
+      const hit =
+        charX         < ob.x + ob.w - 8 &&
+        charX + charW > ob.x + 8         &&
+        charY         < ob.y + ob.h - 8  &&
+        charY + charH > ob.y + 8;
 
-      if (collision) {
-        vies--;
-        livesValEl.textContent = vies;
+      if (hit) {
+        lives--;
+        livesValEl.textContent = lives;
+        invincible = true;
+        invTimer   = 90;
 
-        // Periode dinvincibilite 
-        invincible      = true;
-        timerInvincible = 90;
+        spawnParticles(CHAR.x + CHAR.w / 2, CHAR.y + CHAR.h / 2, '#c0392b');
 
-        // Son et effets visuels du degat
-        jouerSon(damageAudio); 
-        creerParticules(
-          joueur.x + joueur.largeur / 2,
-          joueur.y + joueur.hauteur / 2,
-          '#c0392b'
-        );
+        // Flash rouge à l'écran
+        hitFlash.style.background = 'rgba(180,0,0,0.35)';
+        setTimeout(() => { hitFlash.style.background = 'rgba(180,0,0,0)'; }, 150);
 
-        // Flash rouge qui couvre lecran
-        hitFlash.style.background = 'rgba(180, 0, 0, 0.38)';
-        setTimeout(() => {
-          hitFlash.style.background = 'rgba(180, 0, 0, 0)';
-        }, 150);
-
-        // On supprime lobstacle qui a touche le joueur
         obstacles.splice(i, 1);
 
-        // Si plus de vies:fin de partie
-        if (vies <= 0) {
-          terminerPartie();
-          return; 
-        }
+        if (lives <= 0) { endGame(); return; }
       }
     }
   }
 
-  /* Score passif  */
+  // Score passif (distance parcourue)
   score++;
-  if (nombreFrames % 5 === 0) {
-    scoreValEl.textContent = score;
-  }
+  if (frameCount % 5 === 0) scoreValEl.textContent = score;
 
-  /* Mise à jour des particules */
-  for (let i = particules.length - 1; i >= 0; i--) {
-    const p = particules[i];
-    p.x   += p.vx;
-    p.y   += p.vy;
-    p.vy  += 0.15;  
-    p.vie -= 0.04;  
-    if (p.vie <= 0) {
-      particules.splice(i, 1);
-    }
+  // ── Mise à jour particules ──
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x    += p.vx;
+    p.y    += p.vy;
+    p.vy   += 0.15;
+    p.life -= 0.04;
+    if (p.life <= 0) particles.splice(i, 1);
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 14 — DESSIN
-   ═══════════════════════════════════════════════════════════════ */
-
-function dessiner() {
+/* ── Rendu (affichage) ──────────────────────────────────────── */
+function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  /*  Fond defilant */
-  dessinerFond();
+  // Fond défilant
+  drawBg();
 
-  /*  Ligne du sol */
+  // Ligne de sol lumineuse (effet doré)
   ctx.save();
   ctx.shadowColor = '#d4a84b';
   ctx.shadowBlur  = 18;
-  ctx.fillStyle   = 'rgba(212, 168, 75, 0.33)';
+  ctx.fillStyle   = 'rgba(212,168,75,0.33)';
   ctx.fillRect(0, GROUND + 4, W, 3);
   ctx.restore();
 
-  /*  Dessin des obstacles*/
+  // ── Obstacles ──
   for (const ob of obstacles) {
     ctx.save();
-
-    if (obstacleCharge) {
-      ctx.globalAlpha = 0.93;
-
-      if (ob.type !== 'sol') {
-        const ondulation = Math.sin(nombreFrames * 0.12 + ob.x * 0.01) * 6;
-        ctx.drawImage(imgObstacle, ob.x, ob.y + ondulation, ob.largeur, ob.hauteur);
+    if (obsLoaded) {
+      ctx.globalAlpha = 0.92;
+      if (ob.type !== 'ground') {
+        // Animation de vol : oscillation verticale sinusoïdale
+        const fly = Math.sin(frameCount * 0.12 + ob.x * 0.01) * 6;
+        ctx.drawImage(obsImg, ob.x, ob.y + fly, ob.w, ob.h);
       } else {
-        ctx.drawImage(imgObstacle, ob.x, ob.y, ob.largeur, ob.hauteur);
+        ctx.drawImage(obsImg, ob.x, ob.y, ob.w, ob.h);
       }
-
     } else {
+      // Fallback si image non chargée
       ctx.fillStyle = '#8b2323';
-      ctx.fillRect(ob.x, ob.y, ob.largeur, ob.hauteur);
+      ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
     }
-
     ctx.restore();
   }
 
-  /* Dessin du personnage */
+  // ── Personnage ──
   ctx.save();
-  if (invincible && Math.floor(timerInvincible / 6) % 2 === 0) {
-    ctx.globalAlpha = 0.30;
+
+  // Clignotement pendant la période d'invincibilité
+  if (invincible && Math.floor(invTimer / 6) % 2 === 0) {
+    ctx.globalAlpha = 0.35;
   }
 
-  if (personnageCharge) {
-
-    if (joueur.estAccroupi) {
+  if (charLoaded) {
+    if (CHAR.crouching) {
+      // Écrasement vertical (simulation d'accroupissement)
       ctx.save();
-      ctx.translate(
-        joueur.x + joueur.largeur / 2,
-        joueur.y + joueur.hauteur * 0.72
-      );
+      ctx.translate(CHAR.x + CHAR.w / 2, CHAR.y + CHAR.h * 0.72);
       ctx.scale(1.0, 0.58);
-      ctx.drawImage(
-        imgPersonnage,
-        -joueur.largeur / 2,
-        -joueur.hauteur / 2,
-        joueur.largeur,
-        joueur.hauteur
-      );
+      ctx.drawImage(charImg, -CHAR.w / 2, -CHAR.h / 2, CHAR.w, CHAR.h);
       ctx.restore();
-
     } else {
-      ctx.drawImage(imgPersonnage, joueur.x, joueur.y, joueur.largeur, joueur.hauteur);
+      ctx.drawImage(charImg, CHAR.x, CHAR.y, CHAR.w, CHAR.h);
     }
-
   } else {
-    const posY  = joueur.estAccroupi ? joueur.y + joueur.hauteur * 0.45 : joueur.y;
-    const hautF = joueur.estAccroupi ? joueur.hauteur * 0.55             : joueur.hauteur;
+    // Fallback couleur
+    const cy = CHAR.crouching ? CHAR.y + CHAR.h * 0.45 : CHAR.y;
+    const ch = CHAR.crouching ? CHAR.h * 0.55           : CHAR.h;
     ctx.fillStyle = '#c0a030';
-    ctx.fillRect(joueur.x, posY, joueur.largeur, hautF);
+    ctx.fillRect(CHAR.x, cy, CHAR.w, ch);
   }
 
   ctx.restore();
 
-  /* Dessin des particules*/
-  for (const p of particules) {
+  // ── Particules ──
+  for (const p of particles) {
     ctx.save();
-    ctx.globalAlpha = Math.max(0, p.vie); 
-    ctx.fillStyle   = p.couleur;
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle   = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.rayon, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 15 — BOUCLE PRINCIPALE DU JEU
-   ═══════════════════════════════════════════════════════════════ */
-
-function boucleJeu() {
-  if (!partieEnCours) return;
-
-  mettreAJour(); 
-  dessiner();    
-  animationId = requestAnimationFrame(boucleJeu);
+/* ── Boucle principale ──────────────────────────────────────── */
+function loop() {
+  if (!gameRunning) return;
+  update();
+  draw();
+  animId = requestAnimationFrame(loop);
 }
 
+/* ── Démarrer / Redémarrer ──────────────────────────────────── */
+function startGame() {
+  score      = 0;
+  lives      = 3;
+  speed      = 3;
+  frameCount = 0;
+  bgX        = 0;
+  obstacles  = [];
+  particles  = [];
+  invincible = false;
+  invTimer   = 0;
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 16 — DEMARRER UNE PARTIE
-   ═══════════════════════════════════════════════════════════════ */
-
-function demarrerPartie() {
-  score        = 0;
-  vies         = 3;
-  vitesse      = VITESSE_DEPART;
-  nombreFrames = 0;
-  decalageFond = 0;
-  obstacles    = [];
-  particules   = [];
-  invincible   = false;
-  timerInvincible = 0;
   scoreValEl.textContent = '0';
   livesValEl.textContent = '3';
+
   overlay.style.display = 'none';
 
-  // Replacer le joueur au dep
-  calculerDimensions();
-  initialiserJoueur();
-  lancerMusique(); 
-  partieEnCours = true;
-  boucleJeu();
+  resize();
+  resetChar();
+
+  gameRunning = true;
+  loop();
 }
 
+/* ── Game Over ──────────────────────────────────────────────── */
+function endGame() {
+  gameRunning = false;
+  cancelAnimationFrame(animId);
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 17 — FIN DE PARTIE (GAME OVER)
-   ═══════════════════════════════════════════════════════════════ */
-
-function terminerPartie() {
-  partieEnCours = false;
-  cancelAnimationFrame(animationId);
-  arreterMusique();
-  jouerSon(gameOverAudio); 
-
-  /*Mise a jour du meilleur score */
-  let nouveauRecord = false;
-  if (score > meilleurScore) {
-    meilleurScore    = score;
-    nouveauRecord    = true;
-    bestValEl.textContent        = meilleurScore;
-    bestScoreMenuEl.textContent  = meilleurScore;
-  }
-
-  /* ─── Affichage de Game Over ─── */
   overlay.innerHTML = `
     <h1>MORT</h1>
-    <p class="subtitle">— VOUS ÊTES TOMBÉ DANS LE DONJON —</p>
-    <p class="final-label">SCORE FINAL</p>
-    <p class="final-value">${score}</p>
-    ${nouveauRecord ? '<p class="new-record">🏆 NOUVEAU RECORD !</p>' : `<p class="best-display">🏆 MEILLEUR : ${meilleurScore}</p>`}
+    <div class="subtitle">— VOUS ÊTES TOMBÉ DANS LE DONJON —</div>
+    <p class="final-score-label">SCORE FINAL</p>
+    <p class="final-score-value">${score}</p>
     <button class="btn" id="retryBtn">RÉESSAYER</button>
   `;
   overlay.style.display = 'flex';
 
-  // Rebrancher le bouton "Reessayer"
-  document.getElementById('retryBtn').addEventListener('click', demarrerPartie);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 18 — CONTROLES CLAVIER
-   ═══════════════════════════════════════════════════════════════ */
-
-document.addEventListener('keydown', (evenement) => {
-  if (
-    evenement.code === 'Space'    ||
-    evenement.code === 'ArrowUp'  ||
-    evenement.key  === 'w'        ||
-    evenement.key  === 'W'
-  ) {
-    evenement.preventDefault(); 
-    sauter();
+/* ── Événements clavier ─────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (['Space', 'ArrowUp'].includes(e.code) || e.key === 'w' || e.key === 'W') {
+    e.preventDefault();
+    jump();
   }
-
-  // ACCROUPISSEMENT 
-  if (evenement.code === 'ArrowDown' || evenement.key === 's' || evenement.key === 'S') {
-    evenement.preventDefault();
-    sAccroupir(true); 
+  if (e.code === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+    e.preventDefault();
+    crouch(true);
   }
 });
 
-document.addEventListener('keyup', (evenement) => {
-  if (evenement.code === 'ArrowDown' || evenement.key === 's' || evenement.key === 'S') {
-    sAccroupir(false);
+document.addEventListener('keyup', e => {
+  if (e.code === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+    crouch(false);
   }
 });
 
+/* ── Événements tactiles (mobile) ───────────────────────────── */
+let touchStartY = 0;
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 19 — CONTROLES TACTILES 
-   ═══════════════════════════════════════════════════════════════ */
-
-let posYTouchDepart = 0;
-gameCanvas.addEventListener('touchstart', (e) => {
+gc.addEventListener('touchstart', e => {
   e.preventDefault();
-  posYTouchDepart = e.touches[0].clientY;
-  sauter();
-}, { passive: false });
-gameCanvas.addEventListener('touchmove', (e) => {
-  e.preventDefault();
-  const deplacement = e.touches[0].clientY - posYTouchDepart;
-  if (deplacement > 30) {
-    sAccroupir(true);
-  }
-}, { passive: false });
-gameCanvas.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  sAccroupir(false);
+  touchStartY = e.touches[0].clientY;
+  jump();
 }, { passive: false });
 
+gc.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const dy = e.touches[0].clientY - touchStartY;
+  if (dy > 30) crouch(true);
+}, { passive: false });
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 20 — INITIALISATION AU CHARGEMENT DE LA PAGE
-   ═══════════════════════════════════════════════════════════════ */
-startBtn.addEventListener('click', demarrerPartie);
-dessinerFond();
+gc.addEventListener('touchend', e => {
+  e.preventDefault();
+  crouch(false);
+}, { passive: false });
+
+/* ── Bouton démarrer (menu initial) ─────────────────────────── */
+startBtn.addEventListener('click', startGame);
+
+/* ── Premier rendu du background ────────────────────────────── */
+drawBg();

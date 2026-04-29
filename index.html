@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,53 +9,81 @@
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════════════════
-       CONTENEUR PRINCIPAL 
-       ═══════════════════════════════════════════════════════ -->
-  <div id="gameContainer">
+<div id="gameContainer">
 
-    <!-- CANVAS 1 : fond  (background.jpg) -->
-    <canvas id="bgCanvas"></canvas>
+  <!-- Canvases -->
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-    <!-- CANVAS 2 : personnage + obstacles + particules -->
-    <canvas id="gameCanvas"></canvas>
+  <!-- Flash de dégât -->
+  <div id="hitFlash"></div>
 
-    <!-- Flash rouge visible quand le joueur est touche -->
-    <div id="hitFlash"></div>
+  <!-- HUD -->
+  <div id="ui">
+    <div id="scoreBox">SCORE : <span id="scoreVal">0</span></div>
+    <div id="livesBox">❤️ <span id="livesVal">3</span></div>
+  </div>
 
-    <!-- ───  informations affiches pendant la partie ─── -->
-    <div id="ui">
-      <div id="scoreBox">SCORE : <span id="scoreVal">0</span></div>
-      <div id="bestBox">MEILLEUR : <span id="bestVal">0</span></div>
-      <div id="livesBox">❤️ <span id="livesVal">3</span></div>
+  <!-- Indicateur vitesse -->
+  <div id="speedLabel">VITESSE : <span id="speedLabel2">1.0x</span></div>
+
+  <!-- Overlay menu / game over -->
+  <div id="overlay">
+    <h1>DARKEST RUN</h1>
+    <div class="subtitle">— LE DONJON VOUS ATTEND —</div>
+    <div class="controls">
+      <span>ESPACE / ↑</span> — Sauter (double saut possible)<br>
+      <span>↓ / S</span> — S'accroupir<br>
+      <span>TOUCHER</span> — Sauter (mobile) / Glisser bas pour s'accroupir
     </div>
+    <button class="btn" id="startBtn">COMMENCER</button>
+  </div>
 
-    <!-- Vitesse courante affiche en bas au centre -->
-    <div id="speedLabel">VITESSE : <span id="speedVal">1.0x</span></div>
+</div>
 
-    <!-- ─── OVERLAY : menu de depart et ecran Game Over ─── -->
-    <div id="overlay">
-      <h1>DARKEST RUN</h1>
-      <p class="subtitle">— LE DONJON VOUS ATTEND —</p>
-
-      <!-- Meilleur score affiche dans le menu -->
-      <p class="best-display">🏆 MEILLEUR SCORE : <span id="bestScoreMenu">0</span></p>
-
-      <div class="controls">
-        <span>ESPACE / ↑</span> — Sauter (double saut)<br>
-        <span>↓ / S</span> — S'accroupir<br>
-        <span>TOUCHER</span> — Sauter &nbsp;|&nbsp; Glisser bas = s'accroupir
-      </div>
-
-      <button class="btn" id="startBtn">COMMENCER</button>
-    </div>
-
-  </div><!-- fin #gameContainer -->
-  <audio id="bgMusic"       src="darkfantasy.mp3"   loop preload="auto"></audio>
-  <audio id="jumpAudio"     src="jumpSound.mp3"          preload="auto"></audio>
-  <audio id="damageAudio"   src="damage.mp3"             preload="auto"></audio>
-  <audio id="gameOverAudio" src="gameOverSound.mp3"      preload="auto"></audio>
-
-  <script src="game.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Runner Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1> Runner Game</h1>
+
+<div id="game">
+    <div id="character"></div>
+
+    <!-- START SCREEN -->
+    <div id="startScreen" class="overlay">
+        <h2>Runner Game</h2>
+        <button id="startBtn">Commencer</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameOverScreen" class="overlay hidden">
+        <h2>Game Over</h2>
+        <p>Score : <span id="finalScore"></span></p>
+        <button id="restartBtn">Rejouer</button>
+    </div>
+</div>
+
+<div id="hud">
+    Score : <span id="score">0</span> |
+    Meilleur : <span id="bestScore">0</span>
+</div>
+
+<p>⬆️ Sauter | ⬇️ S'accroupir</p>
+
+<audio id="jumpSound" src="assets/jump.mp3"></audio>
+<audio id="gameOverSound" src="assets/gameover.mp3"></audio>
+
+<script src="script.js"></script>
+</body>
+</html>
+>>>>>>> 73a33fb86f7d6df092be0560c41ced7903de0dea
